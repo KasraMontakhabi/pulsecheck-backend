@@ -39,16 +39,33 @@ class LoginResponse(BaseModel):
     user: UserRead
 
 
+class LoginRequest(BaseModel):
+    username: str  # This will be the email
+    password: str
+
+
+class LoginResponse(BaseModel):
+    access_token: str
+    token_type: str
+    user: UserRead
+
+
 @router.post("/auth/jwt/login-json", response_model=LoginResponse)
 async def login_json(
         login_data: LoginRequest,
         user_manager: UserManager = Depends(get_user_manager)
 ):
-    user = await user_manager.authenticate(
-        credentials={"email": login_data.username, "password": login_data.password}
+    user = await user_manager.get_by_email(login_data.username)
+
+    if user is None:
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+
+    # Verify password
+    valid_password = user_manager.password_helper.verify_and_update(
+        login_data.password, user.hashed_password
     )
 
-    if user is None or not user.is_active:
+    if not valid_password[0] or not user.is_active:
         raise HTTPException(status_code=400, detail="Invalid credentials")
 
     # Generate token
@@ -59,5 +76,5 @@ async def login_json(
     return LoginResponse(
         access_token=token,
         token_type="bearer",
-        user=UserRead.from_orm(user)
+        user=UserRead.model_validate(user)  # Use model_validate instead of from_orm
     )
