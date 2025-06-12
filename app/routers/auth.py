@@ -6,13 +6,6 @@ from app.schemas.user import UserRead, UserCreate, UserUpdate
 
 router = APIRouter()
 
-# Include authentication routes
-router.include_router(
-    fastapi_users.get_auth_router(auth_backend),
-    prefix="/auth/jwt",
-    tags=["auth"]
-)
-
 # Include registration route
 router.include_router(
     fastapi_users.get_register_router(UserRead, UserCreate),
@@ -27,7 +20,6 @@ router.include_router(
     tags=["users"],
 )
 
-
 class LoginRequest(BaseModel):
     username: str
     password: str
@@ -39,19 +31,8 @@ class LoginResponse(BaseModel):
     user: UserRead
 
 
-class LoginRequest(BaseModel):
-    username: str  # This will be the email
-    password: str
-
-
-class LoginResponse(BaseModel):
-    access_token: str
-    token_type: str
-    user: UserRead
-
-
-@router.post("/auth/jwt/login-json", response_model=LoginResponse)
-async def login_json(
+@router.post("/auth/login", response_model=LoginResponse)
+async def login(
         login_data: LoginRequest,
         user_manager: UserManager = Depends(get_user_manager)
 ):
