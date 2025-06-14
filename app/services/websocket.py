@@ -29,13 +29,12 @@ class WebSocketManager:
         # Start Redis subscriber if not already running
         if self._subscriber_task is None and not self._shutdown:
             try:
-                print("🚀 Starting Redis subscriber task...")
+                logger.info("Starting Redis subscriber task...")
                 self._subscriber_task = asyncio.create_task(self._redis_subscriber())
-                print("✅ Redis subscriber task started")
+                logger.info("Redis subscriber task started")
             except Exception as e:
-                print(f"❌ Failed to start Redis subscriber: {e}")
-                import traceback
-                traceback.print_exc()
+                logger.error(f"Failed to start Redis subscriber: {e}")
+                logger.debug("Exception details", exc_info=True)
                 # Don't fail the connection, just log the error
 
         logger.info(
