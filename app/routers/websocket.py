@@ -13,41 +13,36 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-# IMPORTANT: Dashboard routes MUST come before the {monitor_id} route
-# Otherwise FastAPI will try to parse "dashboard" as a UUID
-
 @router.websocket("/ws/dashboard")
 async def dashboard_websocket(websocket: WebSocket):
     """WebSocket endpoint for dashboard-wide updates"""
     import traceback
     from uuid import UUID
 
-    print("🔍 Dashboard WebSocket endpoint called")
+    logger.info("Dashboard WebSocket endpoint called")
 
-    # Accept the connection first
     await websocket.accept()
-    print("✅ Dashboard WebSocket connection accepted")
+    logger.info("Dashboard WebSocket connection accepted")
 
     # Use a special UUID for dashboard connections
     dashboard_id = UUID('00000000-0000-0000-0000-000000000000')
 
     try:
-        # Register with WebSocket manager
-        print(f"📝 Registering with WebSocket manager using ID: {dashboard_id}")
+        logger.info(f"Registering with WebSocket manager using ID: {dashboard_id}")
         await websocket_manager.connect(websocket, dashboard_id)
-        print("✅ Successfully registered with WebSocket manager")
+        logger.info("Successfully registered with WebSocket manager")
 
         # Send welcome message
         welcome_msg = {"type": "welcome", "message": "Dashboard WebSocket connected"}
         await websocket.send_json(welcome_msg)
-        print("📤 Sent welcome message")
+        logger.info("Sent welcome message")
 
         # Keep connection alive
         while True:
             try:
                 # Wait for messages
                 data = await websocket.receive_text()
-                print(f"📥 Received: {data}")
+                logger.debug(f"Received: {data}")
 
                 # Parse message
                 try:
@@ -58,33 +53,33 @@ async def dashboard_websocket(websocket: WebSocket):
                             "type": "pong",
                             "timestamp": message.get("timestamp")
                         })
-                        print("📤 Sent pong response")
+                        logger.debug("Sent pong response")
                     else:
                         # Echo other messages
                         await websocket.send_json({
                             "type": "echo",
                             "received": message
                         })
-                        print("📤 Sent echo response")
+                        logger.debug("Sent echo response")
 
                 except json.JSONDecodeError:
                     await websocket.send_json({
                         "type": "error",
                         "message": "Invalid JSON format"
                     })
-                    print("⚠️ Received invalid JSON")
+                    logger.warning("Received invalid JSON")
 
             except WebSocketDisconnect:
-                print("🔌 Client disconnected normally")
+                logger.info("Client disconnected normally")
                 break
             except Exception as e:
-                print(f"❌ Error in message loop: {type(e).__name__}: {e}")
-                traceback.print_exc()
+                logger.error(f"Error in message loop: {type(e).__name__}: {e}")
+                logger.debug("Exception details", exc_info=True)
                 break
 
     except Exception as e:
-        print(f"❌ Error in dashboard WebSocket: {type(e).__name__}: {e}")
-        traceback.print_exc()
+        logger.error(f"Error in dashboard WebSocket: {type(e).__name__}: {e}")
+        logger.debug("Exception details", exc_info=True)
 
         # Try to send error message to client
         try:
@@ -103,85 +98,8 @@ async def dashboard_websocket(websocket: WebSocket):
     finally:
         # Always unregister from manager
         websocket_manager.disconnect(websocket, dashboard_id)
-        print("🔌 Unregistered from WebSocket manager")
+        logger.info("Unregistered from WebSocket manager")
 
-
-@router.websocket("/ws/dashboard/test")
-async def simple_dashboard_websocket(websocket: WebSocket):
-    """Simple WebSocket endpoint for testing without dependencies"""
-    print("🔍 Simple Dashboard WebSocket endpoint called")
-
-    try:
-        print("📡 Accepting WebSocket connection...")
-        await websocket.accept()
-        print("✅ WebSocket connection accepted")
-
-        # Send welcome message
-        await websocket.send_text('{"type": "welcome", "message": "Simple Dashboard WebSocket connected"}')
-        print("📤 Sent welcome message")
-
-        while True:
-            try:
-                data = await websocket.receive_text()
-                print(f"📥 Received: {data}")
-
-                # Simple echo
-                await websocket.send_text(f'{{"type": "echo", "data": {data}}}')
-                print("📤 Sent echo response")
-
-            except WebSocketDisconnect:
-                print("🔌 WebSocket disconnected")
-                break
-            except Exception as e:
-                print(f"❌ Error: {e}")
-                break
-
-    except Exception as e:
-        print(f"❌ Connection error: {e}")
-        import traceback
-        traceback.print_exc()
-
-
-@router.websocket("/ws/dashboard/no-manager")
-async def dashboard_websocket_no_manager(websocket: WebSocket):
-    """Dashboard WebSocket that bypasses the manager for testing"""
-    print("🔍 No-manager Dashboard WebSocket endpoint called")
-
-    await websocket.accept()
-    print("✅ WebSocket connection accepted")
-
-    try:
-        # Send welcome message
-        await websocket.send_json({
-            "type": "welcome",
-            "message": "Dashboard WebSocket connected (no manager)"
-        })
-
-        # Simple message loop
-        while True:
-            try:
-                data = await websocket.receive_text()
-                message = json.loads(data)
-
-                if message.get("type") == "ping":
-                    await websocket.send_json({"type": "pong"})
-                else:
-                    await websocket.send_json({"type": "echo", "data": message})
-
-            except WebSocketDisconnect:
-                print("🔌 Client disconnected")
-                break
-            except Exception as e:
-                print(f"❌ Error: {e}")
-                break
-
-    except Exception as e:
-        print(f"❌ Connection error: {e}")
-        import traceback
-        traceback.print_exc()
-
-
-# MONITOR ROUTE MUST COME LAST because {monitor_id} will match any string
 @router.websocket("/ws/{monitor_id}")
 async def websocket_endpoint(
         websocket: WebSocket,
@@ -201,8 +119,11 @@ async def websocket_endpoint(
         monitor = result.scalar_one_or_none()
 
         if not monitor:
+            logger.warning(f"Monitor not found: {monitor_id}")
             await websocket.close(code=4004, reason="Monitor not found")
             return
+
+        logger.info(f"Monitor WebSocket connection established for monitor: {monitor_id}")
 
         # Register WebSocket connection
         await websocket_manager.connect(websocket, monitor_id)
@@ -220,6 +141,7 @@ async def websocket_endpoint(
             json.dumps(initial_status),
             websocket
         )
+        logger.debug(f"Sent initial status for monitor: {monitor_id}")
 
         # Keep connection alive and handle client messages
         while True:
@@ -256,3 +178,4 @@ async def websocket_endpoint(
             pass  # Connection might already be closed
     finally:
         websocket_manager.disconnect(websocket, monitor_id)
+        logger.info(f"WebSocket connection closed for monitor: {monitor_id}")
