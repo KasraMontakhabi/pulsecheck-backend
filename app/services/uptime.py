@@ -132,5 +132,4 @@ class UptimeService:
         return time_since_check.total_seconds() >= monitor.interval
 
     async def close(self):
-        """Clean up resources"""
         await self.http_client.aclose()

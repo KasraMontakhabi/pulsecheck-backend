@@ -7,7 +7,7 @@ from app.models.monitor import MonitorStatus
 
 class MonitorCreate(BaseModel):
     url: HttpUrl
-    interval: int = Field(default=300, ge=30, le=3600)  # 30 sec to 1 hour
+    interval: int = Field(default=300, ge=30, le=3600)
     name: Optional[str] = Field(None, max_length=100)
 
     @validator("url")
