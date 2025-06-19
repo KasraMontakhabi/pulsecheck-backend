@@ -18,8 +18,6 @@ class WebSocketManager:
         self._shutdown = False
 
     async def connect(self, websocket: WebSocket, monitor_id: UUID):
-        """Register WebSocket connection for monitor updates"""
-        # Note: websocket.accept() should already be called before this
 
         if monitor_id not in self.active_connections:
             self.active_connections[monitor_id] = set()

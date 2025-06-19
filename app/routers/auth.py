@@ -13,7 +13,6 @@ router.include_router(
     tags=["auth"],
 )
 
-# Include user management routes
 router.include_router(
     fastapi_users.get_users_router(UserRead, UserUpdate),
     prefix="/users",
@@ -57,5 +56,5 @@ async def login(
     return LoginResponse(
         access_token=token,
         token_type="bearer",
-        user=UserRead.model_validate(user)  # Use model_validate instead of from_orm
+        user=UserRead.model_validate(user)
     )

@@ -10,7 +10,6 @@ from app.routers import monitors_router, websocket_router, auth_router
 from app.workers import monitor_worker
 from app.services.websocket import websocket_manager
 
-# Configure logging
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -21,33 +20,26 @@ logger = logging.getLogger(__name__)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    """Application lifespan events"""
-    # Startup
-    logger.info("Starting PulseCheck backend...")
 
-    # Create database tables
+    logger.info("Starting PulseCheck backend...")
     await create_db_and_tables()
 
-    # Start background worker
     await monitor_worker.start()
 
     logger.info("PulseCheck backend started successfully")
 
     yield
 
-    # Shutdown
     logger.info("Shutting down PulseCheck backend...")
 
-    # Stop background worker
     await monitor_worker.stop()
 
-    # Shutdown WebSocket manager
     await websocket_manager.shutdown()
 
     logger.info("PulseCheck backend shutdown complete")
 
 
-# Create FastAPI app
+
 app = FastAPI(
     title=settings.APP_NAME,
     description="A simple uptime monitoring service",
@@ -65,7 +57,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers
 app.include_router(auth_router)
 app.include_router(monitors_router, prefix="/api/v1")
 app.include_router(websocket_router, prefix="/api/v1")
@@ -73,7 +64,6 @@ app.include_router(websocket_router, prefix="/api/v1")
 
 @app.get("/")
 async def root():
-    """Health check endpoint"""
     return {"message": "PulseCheck API is running", "version": "1.0.0"}
 
 

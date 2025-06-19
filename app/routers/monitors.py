@@ -82,7 +82,6 @@ async def update_monitor(
         session: AsyncSession = Depends(get_session),
         current_user: User = Depends(current_active_user)
 ):
-    """Update a monitor"""
     result = await session.execute(
         select(Monitor)
         .where(Monitor.id == monitor_id)
@@ -121,7 +120,6 @@ async def delete_monitor(
         session: AsyncSession = Depends(get_session),
         current_user: User = Depends(current_active_user)
 ):
-    """Delete a monitor"""
     result = await session.execute(
         select(Monitor)
         .where(Monitor.id == monitor_id)
@@ -159,7 +157,6 @@ async def manual_check(
             detail="Monitor not found"
         )
 
-    # Import here to avoid circular imports
     from app.services.uptime import UptimeService
 
     uptime_service = UptimeService()
@@ -167,7 +164,6 @@ async def manual_check(
         status_update = await uptime_service.check_monitor(monitor)
         await uptime_service.update_monitor_status(session, status_update)
 
-        # Refresh monitor to get updated data
         await session.refresh(monitor)
         return monitor
 
