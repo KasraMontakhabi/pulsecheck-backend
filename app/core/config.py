@@ -16,7 +16,7 @@ class Settings(BaseSettings):
 
     # Auth
     SECRET_KEY: str = os.environ.get("SECRET_KEY")
-    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60*24*30
 
     # Google OAuth
 
@@ -25,7 +25,7 @@ class Settings(BaseSettings):
 
     # Email
     POSTMARK_API_TOKEN: Optional[str] = os.environ.get("POSTMARK_API_TOKEN")
-    EMAIL_FROM: str = "noreply@pulsecheck.com"
+    EMAIL_FROM: str = "montakhabikasra@gmail.com"
     EMAIL_DEV_MODE: bool = True
 
     # App
