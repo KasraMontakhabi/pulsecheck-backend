@@ -44,7 +44,7 @@ class EmailService:
         if self.client and not settings.EMAIL_DEV_MODE:
             try:
 
-                to_email = "admin@example.com"  # TODO: Get from monitor.user.email
+                to_email = monitor.user.email
 
                 self.client.emails.send(
                     From=settings.EMAIL_FROM,

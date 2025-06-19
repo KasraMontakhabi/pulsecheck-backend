@@ -75,6 +75,14 @@ docs/_build/
 .pybuilder/
 target/
 
+# Database
+*.db
+*.sqlite3
+
+# Docker
+docker-compose.override.yml
+
+
 # Jupyter Notebook
 .ipynb_checkpoints
 

@@ -2,10 +2,13 @@ import logging
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from starlette.websockets import WebSocket
+
 from app.core.config import settings
 from app.core.database import create_db_and_tables
 from app.routers import monitors_router, websocket_router, auth_router
 from app.workers import monitor_worker
+from app.services.websocket import websocket_manager
 
 # Configure logging
 logging.basicConfig(
@@ -34,7 +37,13 @@ async def lifespan(app: FastAPI):
 
     # Shutdown
     logger.info("Shutting down PulseCheck backend...")
+
+    # Stop background worker
     await monitor_worker.stop()
+
+    # Shutdown WebSocket manager
+    await websocket_manager.shutdown()
+
     logger.info("PulseCheck backend shutdown complete")
 
 
@@ -48,7 +57,6 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Add CORS middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=settings.CORS_ORIGINS,
